@@ -11,9 +11,10 @@
     之后董朝会在github上建立任务发布日期相关的milestone，和相关的issue
 
 2. 认领  
-认领方式：在小组内评论一下，表示认领  
-因为我们使用Github来管理稿件，在github上把相关的issue，分配给自己就好了。
+认领方式：在小组内评论一下，表示认领。  
+因为我们使用Github来管理稿件，在github上把相关的issue，分配给自己就好了。尽量小组内评论和Github Issues都要做哈，方便其他小伙伴看到你的认领状态。避免重复认领哈。（最终以github isssue的认领状态为准）
 ![](./readme_imgs/taskstate.png)
+
 
 3. 发布  
 文章由译者上传到Github上，所放目录为任务发布日期下，并且命名使用引文文章的名称，比如2014-5-21发布的文章放在./2014/5/21/understand-uiscroll.md下  
