@@ -14,16 +14,11 @@ This exercise added to my list of things that I can only do while drinking: I ha
 这个练习变成了我喝酒是唯一能做的事：当喝啤酒时，我有最好的逻辑思维能力，当喝苏格兰威士忌时，我有最好的Clang分析器。
 
 ###Strategy 策略
+Coverity最近提出了一种静态确定心脏流血问题的方法，它是通过污染返回值作为输入数据，这个返回值是调用ntohl和ntohs方法返回的。在对于一个像OpenSSL这种大的状态机做静态分析时，你可能会遇到两个问题，一个问题是你必须知道状态机能否追踪一些值，这些值能够被攻击者利用，从而影响到整个程序。另外就是你可能需要在程序中有一些注解，告诉分析器那儿有一个可用的输入数据。
 
-One approach to identify Heartbleed statically was proposed by Coverity recently, which is to taint the return values of calls to ntohl and ntohs as input data. One problem with doing static analysis on a big state machine like OpenSSL is that your analysis either has to know the state machine to be able to track what values are attacker influenced across the whole program, or, they have to have some kind of annotation in the program that tells the analysis where there is a use of input data.
+我喜欢这种观点，因为它确实可行。标记ntohl调用来生产污染数据，它是一种启发式的并且相当不错的方式，因为程序员并不会htonl自己的数据。
 
-提出了通过Coverity的一种方法以静态确定Heartbleed最近，这是玷污调用ntohl相似，并且还有ntohs作为输入数据的返回值。用做静态分析一个大的状态机一样的OpenSSL的一个问题是，你的分析要么必须知道状态机能够追踪什么值在整个程序攻击的影响，或者，他们必须有一些类型的注释中告诉分析那里有一个用输入数据的程序。
-
-I like this observation because it is pretty actionable. You mark ntohl calls as producing tainted data, which is a heuristic, but a pretty good one because programmers probably won’t htonl their own data.
-What our clang analyzer plugin should do is identify locations in the program where variables are written using ntohl, taint them, and then alert when those tainted values are used as the size parameter to memcpy. Except, that isn’t quite right, it could be the use is safe. We’ll also check the constraints of the tainted values at the location of the call: if the tainted value hasn’t been constrained in some way by the program logic, and it’s used as an argument to memcpy, alert on a bug. This could also miss some bugs, but I’m writing this over a 24h period with some Scotch, so increasing precision can come later.
-
-我喜欢这个观察，因为它是相当可行的。您标记ntohl相似的呼叫为生产污染数据，这是一个启发式的，但一个相当不错的，因为程序员可能不会htonl自己的数据。
-我们什么铛分析仪插件应该做的是确定的地点在变量使用ntohl相似，写程序，玷污他们，然后当这些污染值作为size参数memcpy的提醒。只是，这是不完全正确，也可能是使用是安全的。我们也将检查被感染的值的约束在调用的位置：如果有漏值尚未制约以某种方式通过程序逻辑，并使用它作为参数传递给memcpy的，警觉的一个bug 。这也可能错过了一些错误，但我在写这在一个24小时内用透明，从而增加精度可以晚一点。
+我们的Clang分析器插件做的是在程序中确定使用ntohl写的变量的位置，污染他们，然后当这些被污染的值作为大小参数在memcpy函数中使用时给予提示。可是这不完全正确，但使用上是安全的。我们也将在调用的位置检查被感染的值的约束：如果被感染的值通过程序逻辑在某些情况下没有被约束，并使用它作为memcpy的参数，则提示是一个bug 。这种做法可能会错过一些bug，但我是在喝着苏格兰威士忌并在一个天内完成，增加准确度可以以后再做。
 
 ###Clang analyzer details Clang分析器的细节
 
@@ -190,12 +185,12 @@ And finally, to see it catching Heartbleed in both locations it was present in O
 
 ###讨论
 
-The approach needs some improvement, we reason about if a tainted value is “appropriately” constrained or not in a very coarse-grained way. Sometimes that’s the best you can do though – if your analysis doesn’t know how large a particular buffer is, perhaps it’s enough to show to an analyst “hey, this value could be larger than 5000 and it is used as a parameter to memcpy, is that okay?”
-I really don’t like the limitation in clang analyzer of operating on ASTs. I spent a lot of time fighting with the clang AST representation of ntohs and I still don’t understand what the source of the problem was. I kind of just want to consider a programs semantics in a virtual machine with very simple semantics, so LLVM IR seems ideal to me. This might just be my PL roots showing though.
-I really do like the clang analyzers interface to path constraints. I think that interface is pretty powerful and once you get your head around how to apply your problem to asking states if new states satisfying your constraints are feasible, it’s pretty straightforward to write new analyses.
-该方法需要一些改进，我们推理，如果一个污染值是“适当的”限制或无法在非常粗粒度的方式。有时候，这是最好的，你可以做，但 - 如果你的分析不知道多大的特定缓冲区，或许这足以展现给分析师“哎，这个值可能会大于5000 ，它是用来作为参数传递给memcpy的是，好吗？ “
-我真的不喜欢限制在AST的经营铛分析仪。我花了很多时间还有ntohs的铛AST表示战斗，我还是不明白这个问题的来源。那种我只是想考虑在虚拟机中的程序语义具有非常简单的语义，所以LLVM IR似乎理想的给我。这可能只是我的根特等虽然表现。
-我真的很喜欢的铛分析仪接口路径约束。我认为接口是相当强大的，一旦你得到你的头围绕如何对您的问题适用于要求各国是否有新的状态满足你的约束是可行的，这是很简单的写新的分析。
+上面的方式还需要一些改进，我们假定一个污染值是“适当的”约束或者不是一种非常粗粒度的方式。有时候这可能是你能够做的最好的了 - 如果你的分析器并不知道多大的特定缓冲区，或许只足以展现给分析者：“哎，这个值可能会大于5000 ，并且它是用来作为参数传递给memcpy的，这样可以吗？ “
+我真的不喜欢在操作AST时，Clang分析器的限制。
+我花了很多时间来和ntohs的clang的AST表现做斗争，但我一直不明白这个问题的根源。我只是想以一种非常简单的语义来考虑在虚拟机中的程序语义，因此LLVM IR似乎很理想。这可能只是我的PL根源表现。
+
+I think that interface is pretty powerful and once you get your head around how to apply your problem to asking states if new states satisfying your constraints are feasible, it’s pretty straightforward to write new analyses.
+我真的很喜欢的Clang分析器的接口路径约束。该接口是相当强大的，一旦你得到你的头围绕如何对您的问题适用于要求各国是否有新的状态满足你的约束是可行的，写新的分析器就变得很简单了。
 
 ###代码
 
