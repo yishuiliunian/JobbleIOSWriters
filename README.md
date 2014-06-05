@@ -24,4 +24,5 @@
 添加改项目写权限联系：yishuiliunian@gmail.com | 748923408
 
 ##任务大列表
+[Swift编程指南中文版](./Swift/swiftguide.md)
 [2014-5-21](./task/2014/5/21.md)
